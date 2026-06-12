@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 
-# 🔑 SET YOUR CHOSEN ADMIN PASSWORD HERE
-ADMIN_PASSWORD = "Password123"
+# 🔑 Fetches the password securely from Streamlit's hidden Secrets dashboard
+ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 
 # Set up the page title and layout
 st.set_page_config(
