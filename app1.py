@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # Define the authorized Admin Email (Replace this with YOUR GitHub email)
-ADMIN_EMAIL = "your-github-email@example.com"
+ADMIN_EMAIL = "sanchimeena13@gmail.com"
 
 # Set up the page title and layout
 st.set_page_config(page_title="Customer Interest Finder", layout="centered")
