@@ -1,3 +1,4 @@
+import streamlit as pd
 import streamlit as st
 import pandas as pd
 
@@ -10,53 +11,52 @@ st.set_page_config(page_title="Customer Interest Finder", layout="centered")
 st.title("📱 Mobile Number Interest Lookup")
 st.write("Enter a mobile number below to see the top 10 rated interests associated with it.")
 
+# --- THE GLOBAL DATA STORE ---
+# We use st.cache_resource so that the uploaded data is shared across ALL users globally
+@st.cache_resource
+def get_global_data():
+    return {"df": None}
+
+global_store = get_global_data()
+
+
 # --- ADMIN LOGIN SIDEBAR ---
 st.sidebar.header("⚙️ Admin Controls")
-
-# Password input widget (hidden text input)
 admin_login = st.sidebar.text_input("Enter Admin Password:", type="password")
 
-# Initialize data variable
-data = None
-
-# Check if the entered password matches your secret password
 if admin_login == ADMIN_PASSWORD:
     st.sidebar.success("🔓 Admin Access Granted!")
     
     # File uploader widget - ONLY appears when password is correct
     uploaded_file = st.sidebar.file_uploader("Upload Daily Excel File", type=["xlsx", "xls"])
 
-    @st.cache_data(show_spinner="Processing Excel data...")
-    def load_data(file):
+    if uploaded_file is not None:
         try:
-            df = pd.read_excel(file)
+            # Process the Excel file
+            df = pd.read_excel(uploaded_file)
             if 'Mobile Number' in df.columns:
                 df['Mobile Number'] = df['Mobile Number'].astype(str).str.strip()
-            return df
+            
+            # Save it to the GLOBAL store so everyone can see it instantly
+            global_store["df"] = df
+            st.sidebar.success("✅ Excel file pushed to live servers!")
         except Exception as e:
             st.sidebar.error(f"Error loading file: {e}")
-            return None
-
-    if uploaded_file is not None:
-        data = load_data(uploaded_file)
-        # Store data in session state so it stays loaded for everyone else visiting
-        st.session_state['cached_dataframe'] = data
-        st.sidebar.success("✅ Excel file loaded and updated!")
     
-    if st.sidebar.button("🔄 Clear App Cache"):
-        st.cache_data.clear()
-        if 'cached_dataframe' in st.session_state:
-            del st.session_state['cached_dataframe']
-        st.sidebar.info("Cache cleared. Please re-upload the file.")
+    # Admin clear button to wipe the global data
+    if st.sidebar.button("🔄 Clear Live Data"):
+        global_store["df"] = None
+        st.cache_resource.clear()
+        st.sidebar.info("Live data cleared.")
         st.rerun()
 else:
-    if admin_login: # If they typed a password but it's wrong
+    if admin_login:
         st.sidebar.error("❌ Incorrect Password")
 
+
 # --- RETRIEVE DATA FOR USERS ---
-# If the data is stored in the app memory, normal users can access it
-if 'cached_dataframe' in st.session_state:
-    data = st.session_state['cached_dataframe']
+# Fetch data from the global store
+data = global_store["df"]
 
 
 # --- FRONTEND / USER SEARCH INTERFACE ---
@@ -65,7 +65,7 @@ if data is not None:
     if not all(col in data.columns for col in expected_cols):
         st.error(f"The Excel sheet must contain these exact columns: {expected_cols}")
     else:
-        # Search Box Component (Visible to Everyone)
+        # Search Box Component (Visible to Everyone once data is loaded)
         search_input = st.text_input("Enter Mobile Number:", placeholder="e.g., 9876543210").strip()
 
         if search_input:
