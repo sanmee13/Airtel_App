@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 
-# Define the authorized Admin Email (Replace this with YOUR GitHub email)
-ADMIN_EMAIL = "sanchimeena13@gmail.com"
+# 🔑 SET YOUR CHOSEN ADMIN PASSWORD HERE
+ADMIN_PASSWORD = "Password123"
 
 # Set up the page title and layout
 st.set_page_config(page_title="Customer Interest Finder", layout="centered")
@@ -10,19 +10,20 @@ st.set_page_config(page_title="Customer Interest Finder", layout="centered")
 st.title("📱 Mobile Number Interest Lookup")
 st.write("Enter a mobile number below to see the top 10 rated interests associated with it.")
 
-# --- AUTOMATIC ADMIN CHECK ---
-# Streamlit automatically passes user info if they are logged into Streamlit Cloud
-user_email = st.context.headers.get("X-Streamlit-User-Email")
+# --- ADMIN LOGIN SIDEBAR ---
+st.sidebar.header("⚙️ Admin Controls")
+
+# Password input widget (hidden text input)
+admin_login = st.sidebar.text_input("Enter Admin Password:", type="password")
 
 # Initialize data variable
 data = None
 
-# Only show the sidebar if the logged-in user matches the admin email
-if user_email == ADMIN_EMAIL:
-    st.sidebar.header("⚙️ Admin Controls")
-    st.sidebar.write(f"Logged in as: `{user_email}`")
+# Check if the entered password matches your secret password
+if admin_login == ADMIN_PASSWORD:
+    st.sidebar.success("🔓 Admin Access Granted!")
     
-    # File uploader widget
+    # File uploader widget - ONLY appears when password is correct
     uploaded_file = st.sidebar.file_uploader("Upload Daily Excel File", type=["xlsx", "xls"])
 
     @st.cache_data(show_spinner="Processing Excel data...")
@@ -38,7 +39,7 @@ if user_email == ADMIN_EMAIL:
 
     if uploaded_file is not None:
         data = load_data(uploaded_file)
-        # We store the data in session state so it stays loaded for normal users
+        # Store data in session state so it stays loaded for everyone else visiting
         st.session_state['cached_dataframe'] = data
         st.sidebar.success("✅ Excel file loaded and updated!")
     
@@ -46,10 +47,14 @@ if user_email == ADMIN_EMAIL:
         st.cache_data.clear()
         if 'cached_dataframe' in st.session_state:
             del st.session_state['cached_dataframe']
+        st.sidebar.info("Cache cleared. Please re-upload the file.")
         st.rerun()
+else:
+    if admin_login: # If they typed a password but it's wrong
+        st.sidebar.error("❌ Incorrect Password")
 
 # --- RETRIEVE DATA FOR USERS ---
-# If the admin has uploaded data into the session, regular users can access it
+# If the data is stored in the app memory, normal users can access it
 if 'cached_dataframe' in st.session_state:
     data = st.session_state['cached_dataframe']
 
